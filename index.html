@@ -58,16 +58,21 @@
     function detectBrowser() {
       const userAgent = navigator.userAgent;
 
+      // Ordem importa: detectar Brave primeiro, pois ele também contém "Chrome"
       if (userAgent.includes('Brave')) {
         return 'brave';
-      } else if (userAgent.includes('Chrome')) {
-        return 'chrome';
-      } else if (userAgent.includes('Firefox')) {
-        return 'firefox';
-      } else if (userAgent.includes('Edg')) { // Edge
+      } else if (userAgent.includes('Edg')) { // Microsoft Edge
         return 'edge';
+      } else if (userAgent.includes('Chrome')) { // Google Chrome (ou outros Chromium-based não detectados acima)
+        return 'chrome';
+      } else if (userAgent.includes('Firefox')) { // Mozilla Firefox
+        return 'firefox';
+      } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) { // Apple Safari
+        // Safari não tem "Chrome" no userAgent, por isso a verificação extra
+        return 'safari';
       } else {
         // Caso não identifique, retorna um padrão
+        console.warn('Navegador não identificado, usando Brave como padrão.');
         return 'brave'; // ou 'chrome', como padrão
       }
     }

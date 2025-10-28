@@ -15,20 +15,19 @@ app.get('/', (req, res) => {
 
 // Rota para download
 app.post('/download', (req, res) => {
-  const { url, browser = 'brave' } = req.body;
+  const { url, browser = 'brave' } = req.body; // Recebe o navegador detectado
 
   if (!url) {
     return res.status(400).send('URL não fornecida');
   }
 
-  // 🔥 Remover espaços da URL
   const cleanUrl = url.trim();
-  console.log('Baixando:', cleanUrl);
+  console.log('Baixando:', cleanUrl, 'com navegador:', browser); // Log mais informativo
 
-  // 🔥 Escolher formato com base na plataforma
+  // Escolher formato com base na plataforma
   let formatOption;
   if (cleanUrl.includes('pinterest.com') || cleanUrl.includes('pin.it')) {
-    formatOption = 'bestvideo[ext=mp4]/best[ext=mp4]/best'; // Pinterest: só vídeo
+    formatOption = 'bestvideo[ext=mp4]/best[ext=mp4]/best';
   } else {
     formatOption = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
   }
@@ -36,17 +35,21 @@ app.post('/download', (req, res) => {
   const args = [
     cleanUrl,
     '--format', formatOption,
+    // --- NOVO: Limitar comprimento do nome do arquivo ---
+    '--trim-filenames', '100', // Limita o nome do arquivo a 100 caracteres
+    // --- FIM NOVO ---
     '--merge-output-format', 'mp4',
-    '--output', 'downloads/%(title)s.%(ext)s'
+    '--output', 'downloads/%(title).100s.%(ext)s' // Limita título a 100 caracteres também
   ];
 
-  // Só adicionar cookies para TikTok/Instagram
+  // Adicionar cookies + impersonate para TikTok e Instagram
   if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
+    // --- ATENÇÃO: AQUI ESTÁ A CHAVE ---
+    // Usar o navegador detectado automaticamente e --impersonate chrome
     args.push('--cookies-from-browser', browser);
-    args.push('--impersonate', 'chrome');
+    args.push('--impersonate', 'chrome'); // Impersonate funciona bem para todos os Chromium-based e Firefox nesse contexto
   }
 
-  // Criar pasta de downloads se não existir
   if (!fs.existsSync('downloads')) {
     fs.mkdirSync('downloads');
   }
