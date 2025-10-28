@@ -1,0 +1,67 @@
+// ...existing code...
+# Meu Downloader
+
+Pequeno servidor Express para baixar vídeos públicos (YouTube, TikTok, Instagram, Facebook, etc.) usando `yt-dlp`.
+
+## Estrutura
+- [index.html](index.html) — Interface web (formulário).
+- [server.js](server.js) — Lógica do servidor e rotas.
+- [package.json](package.json) — Dependências e script de execução.
+- [downloads/](downloads/) — Pasta onde os arquivos baixados são salvos.
+- [.gitignore](.gitignore) — Regras de ignore (inclui vídeos e downloads).
+
+## Requisitos
+- Node.js (v14+ recomendado)
+- yt-dlp instalado no PATH do sistema
+- Navegador (para cookies ao baixar de TikTok/Instagram)
+
+## Instalação
+1. Instale dependências:
+   ```sh
+   npm install
+
+   Uso
+Inicie o servidor:
+
+npm start
+
+Isso executa o script start em package.json.
+
+Abra a interface em http://localhost:3000 (arquivo index.html).
+
+Cole a URL do vídeo, escolha um navegador (quando necessário) e clique em "Baixar Vídeo".
+A rota que lida com a solicitação de download é app.post('/download') e os arquivos baixados são servidos por app.get('/downloaded/:filename').
+
+Os arquivos salvos ficam em downloads e podem ser baixados via link gerado na interface.
+
+Observações
+Para TikTok/Instagram o servidor tenta usar cookies do navegador (--cookies-from-browser) e --impersonate para evitar bloqueios.
+A pasta downloads está listada em .gitignore para não comitar arquivos grandes.
+Se não houver arquivo gerado, o servidor retorna erro 500 com mensagem apropriada.
+
+Segurança e uso responsável
+
+Baixe apenas conteúdos públicos e com permissão para baixar.
+Evite expor o servidor a redes públicas sem autenticação.
+Licença
+Projeto pessoal — adaptar conforme necessário.
+
+
+Arquivos e símbolos mencionados:- [index.html](index.html)- [server.js](server.js)- [package.json](package.json)- [.gitignore](.gitignore)- [README](README)- [downloads/](downloads/)- Rotas/símbolos: [`app.post('/download')`](server.js), [`app.get('/downloaded/:filename')`](server.js), script [`start`](package.json)Arquivos e símbolos mencionados:- [index.html](index.html)- [server.js](server.js)- [package.json](package.json)- [.gitignore](.gitignore)- [README](README)- [downloads/](downloads/)- Rotas/símbolos: [`app.post('/download')`](server.js), [`app.get('/downloaded/:filename')`](server.js), script [`start`](package.json)
+
+
+Arquivos e símbolos mencionados:
+- [index.html](index.html)
+- [server.js](server.js)
+- [package.json](package.json)
+- [.gitignore](.gitignore)
+- [README](README)
+- [downloads/](downloads/)
+- Rotas/símbolos: [`app.post('/download')`](server.js), [`app.get('/downloaded/:filename')`](server.js), script [`start`](package.json)Arquivos e símbolos mencionados:
+- [index.html](index.html)
+- [server.js](server.js)
+- [package.json](package.json)
+- [.gitignore](.gitignore)
+- [README](README)
+- [downloads/](downloads/)
+- Rotas/símbolos: [`app.post('/download')`](server.js), [`app.get('/downloaded/:filename')`](server.js), script [`start`](package.json)

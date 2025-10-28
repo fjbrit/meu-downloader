@@ -14,7 +14,7 @@
     h1 {
       color: #333;
     }
-    input, select {
+    input {
       width: 100%;
       padding: 12px;
       font-size: 16px;
@@ -49,22 +49,33 @@
   <h1>📥 Meu Downloader de Vídeos</h1>
   <p>Coloque a URL de um vídeo público (YouTube, TikTok, Instagram, Facebook, etc.):</p>
   <input type="text" id="videoUrl" placeholder="Ex: https://www.youtube.com/watch?v=..." />
-  
-  <label for="browser">Navegador (só usado para TikTok/Instagram):</label>
-  <select id="browser">
-    <option value="brave">Brave</option>
-    <option value="chrome">Chrome</option>
-    <option value="firefox">Firefox</option>
-    <option value="edge">Edge</option>
-  </select>
-
+  <!-- REMOVIDO: <select id="browser"> -->
   <button id="downloadBtn">Baixar Vídeo</button>
   <div id="status"></div>
 
   <script>
+    // Função para detectar o navegador automaticamente
+    function detectBrowser() {
+      const userAgent = navigator.userAgent;
+
+      if (userAgent.includes('Brave')) {
+        return 'brave';
+      } else if (userAgent.includes('Chrome')) {
+        return 'chrome';
+      } else if (userAgent.includes('Firefox')) {
+        return 'firefox';
+      } else if (userAgent.includes('Edg')) { // Edge
+        return 'edge';
+      } else {
+        // Caso não identifique, retorna um padrão
+        return 'brave'; // ou 'chrome', como padrão
+      }
+    }
+
     document.getElementById('downloadBtn').addEventListener('click', async () => {
       const url = document.getElementById('videoUrl').value.trim();
-      const browser = document.getElementById('browser').value;
+      // DETECTA O NAVEGADOR AQUI
+      const browser = detectBrowser();
       const status = document.getElementById('status');
       const btn = document.getElementById('downloadBtn');
 
@@ -77,6 +88,7 @@
       status.textContent = '⏳ Enviando solicitação...';
 
       try {
+        // ENVIA O NAVEGADOR DETECTADO JUNTO COM A URL
         const response = await fetch('/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
