@@ -1,0 +1,37 @@
+node_modules/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+downloads/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.vscode/
+*.swp
+*.swo
+coverage/
+.nyc_output/
+
+# Arquivos de vídeo
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.m4v
+*.3gp
+*.f4v
+*.ogv
+
+# Arquivos de instalação
+*.deb
+*.rpm
+*.exe
+*.msi
+*.dmg

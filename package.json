@@ -1,0 +1,12 @@
+{
+  "name": "meu-downloader",
+  "version": "1.0.0",
+  "description": "Baixador de vídeos simples",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
