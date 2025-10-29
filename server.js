@@ -32,20 +32,17 @@ app.post('/download', (req, res) => {
     formatOption = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
   }
 
+  // --- NOVO: Nome de arquivo mais seguro (ID + título limitado) ---
   const args = [
     cleanUrl,
     '--format', formatOption,
-    // --- NOVO: Limitar comprimento do nome do arquivo ---
     '--trim-filenames', '100', // Limita o nome do arquivo a 100 caracteres
-    // --- FIM NOVO ---
     '--merge-output-format', 'mp4',
-    '--output', 'downloads/%(title).100s.%(ext)s' // Limita título a 100 caracteres também
+    '--output', 'downloads/%(id)s_%(title,fulltitle,alt_title)s.%(ext)s' // Nome baseado no ID e título truncado
   ];
 
   // Adicionar cookies + impersonate para TikTok e Instagram
   if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
-    // --- ATENÇÃO: AQUI ESTÁ A CHAVE ---
-    // Usar o navegador detectado automaticamente e --impersonate chrome
     args.push('--cookies-from-browser', browser);
     args.push('--impersonate', 'chrome'); // Impersonate funciona bem para todos os Chromium-based e Firefox nesse contexto
   }
@@ -56,6 +53,15 @@ app.post('/download', (req, res) => {
 
   const ytDlp = spawn('yt-dlp', args);
 
+  // --- TRATAMENTO DE ERROS DO YT-DLP (CORRIGIDO) ---
+  ytDlp.on('error', (err) => {
+    console.error(`Erro ao iniciar yt-dlp: ${err.message}`);
+    // Se o spawn falhar (ex: yt-dlp não encontrado), retorne erro
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Falha ao iniciar o yt-dlp' });
+    }
+  });
+
   ytDlp.stdout.on('data', (data) => {
     console.log(`yt-dlp: ${data}`);
   });
@@ -65,17 +71,29 @@ app.post('/download', (req, res) => {
   });
 
   ytDlp.on('close', (code) => {
+    // Verifique se a resposta HTTP já foi enviada (previna enviar duas vezes)
+    if (res.headersSent) {
+        console.warn('Headers já enviados, não posso responder novamente.');
+        return;
+    }
+
     if (code === 0) {
       const files = fs.readdirSync('downloads');
       if (files.length === 0) {
+        // O yt-dlp terminou com sucesso, mas nenhum arquivo foi salvo
+        console.error('yt-dlp terminou com sucesso, mas nenhum arquivo foi encontrado na pasta downloads.');
         return res.status(500).json({ error: 'Nenhum arquivo foi salvo' });
       }
       const lastFile = files[files.length - 1];
       res.json({ success: true, file: lastFile });
     } else {
+      // O yt-dlp terminou com erro (code != 0)
+      console.error(`yt-dlp terminou com código ${code}`);
+      // Retorne erro para o frontend
       res.status(500).json({ error: 'Falha ao baixar o vídeo' });
     }
   });
+  // --- FIM TRATAMENTO DE ERROS ---
 });
 
 // Servir arquivos baixados

@@ -49,38 +49,61 @@
   <h1>📥 Meu Downloader de Vídeos</h1>
   <p>Coloque a URL de um vídeo público (YouTube, TikTok, Instagram, Facebook, etc.):</p>
   <input type="text" id="videoUrl" placeholder="Ex: https://www.youtube.com/watch?v=..." />
-  <!-- REMOVIDO: <select id="browser"> -->
   <button id="downloadBtn">Baixar Vídeo</button>
   <div id="status"></div>
 
   <script>
-    // Função para detectar o navegador automaticamente
-    function detectBrowser() {
-      const userAgent = navigator.userAgent;
+ // Função para detectar o navegador automaticamente
+function detectBrowser() {
+  const userAgent = navigator.userAgent;
 
-      // Ordem importa: detectar Brave primeiro, pois ele também contém "Chrome"
-      if (userAgent.includes('Brave')) {
-        return 'brave';
-      } else if (userAgent.includes('Edg')) { // Microsoft Edge
-        return 'edge';
-      } else if (userAgent.includes('Chrome')) { // Google Chrome (ou outros Chromium-based não detectados acima)
-        return 'chrome';
-      } else if (userAgent.includes('Firefox')) { // Mozilla Firefox
-        return 'firefox';
-      } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) { // Apple Safari
-        // Safari não tem "Chrome" no userAgent, por isso a verificação extra
-        return 'safari';
-      } else {
-        // Caso não identifique, retorna um padrão
-        console.warn('Navegador não identificado, usando Brave como padrão.');
-        return 'brave'; // ou 'chrome', como padrão
-      }
-    }
+  // --- DETECÇÃO BASEADA EM API JAVASCRIPT (funciona no Brave) ---
+  // O Brave define uma propriedade específica no objeto navigator ou window.
+  // A forma mais comum é verificar `navigator.brave`.
+  // Se o objeto `navigator.brave` existir, é quase certeza que é o Brave.
+  if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
+    console.log('Navegador detectado como Brave (API navigator.brave.isBrave)');
+    return 'brave';
+  }
+
+  // --- DETECÇÃO BASEADA EM USERAGENT (fallback ou outros navegadores) ---
+  // Se a API não funcionar (ou não existir mais), voltamos ao userAgent.
+
+  // Detectar Edge: Tem "Edg/".
+  if (userAgent.includes('Edg/')) {
+    console.log('Navegador detectado como Edge (userAgent)');
+    return 'edge';
+  }
+
+  // Detectar Chrome: Tem "Chrome/" mas NÃO tem "Edg/" (não é Edge).
+  // Esta condição agora vem após a verificação do Brave e do Edge.
+  if (userAgent.includes('Chrome/')) {
+    console.log('Navegador detectado como Chrome (userAgent, não é Brave nem Edge)');
+    return 'chrome';
+  }
+
+  // Detectar Firefox: Tem "Firefox/".
+  if (userAgent.includes('Firefox/')) {
+    console.log('Navegador detectado como Firefox (userAgent)');
+    return 'firefox';
+  }
+
+  // Detectar Safari: Tem "Safari/" mas NÃO tem "Chrome/".
+  if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) {
+    console.log('Navegador detectado como Safari (userAgent)');
+    return 'safari';
+  }
+
+  // --- NAVEGADOR NÃO IDENTIFICADO ---
+  console.warn('Navegador não identificado via API ou userAgent, usando Brave como padrão.');
+  return 'brave'; // ou 'chrome', como padrão
+}
 
     document.getElementById('downloadBtn').addEventListener('click', async () => {
       const url = document.getElementById('videoUrl').value.trim();
-      // DETECTA O NAVEGADOR AQUI
-      const browser = detectBrowser();
+      const browser = detectBrowser(); // Detecta o navegador
+      console.log('Navegador enviado para o backend:', browser); // Log importante para debug
+
       const status = document.getElementById('status');
       const btn = document.getElementById('downloadBtn');
 
@@ -93,11 +116,10 @@
       status.textContent = '⏳ Enviando solicitação...';
 
       try {
-        // ENVIA O NAVEGADOR DETECTADO JUNTO COM A URL
         const response = await fetch('/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, browser })
+          body: JSON.stringify({ url, browser }) // Envia o navegador detectado
         });
 
         const data = await response.json();
