@@ -66,8 +66,13 @@ app.post('/download', (req, res) => {
   // Escolher formato com base na plataforma
   let formatOption;
   if (cleanUrl.includes('pinterest.com') || cleanUrl.includes('pin.it')) {
-    formatOption = 'bestvideo[ext=mp4]/best[ext=mp4]/best';
+    // Pinterest: vídeos SEM áudio ou imagem
+    formatOption = 'best[ext=mp4]/best'; // Aceita vídeo ou imagem
+  } else if (cleanUrl.includes('vimeo.com')) {
+    // Vimeo: Pode não ter MP4 ou áudio separado, usar o melhor disponível
+    formatOption = 'bv*+ba/b'; // Melhor vídeo + melhor áudio / ou melhor geral
   } else {
+    // Outras plataformas (YouTube, Facebook, etc.): tentar vídeo + áudio
     formatOption = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
   }
 
@@ -80,9 +85,13 @@ app.post('/download', (req, res) => {
     '--output', 'downloads/%(id)s_%(title,fulltitle,alt_title)s.%(ext)s' // Nome baseado no ID e título truncado
   ];
 
-  // Adicionar cookies + impersonate para TikTok e Instagram
-  if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
-    // Usar a função para obter o caminho correto ou nome padrão
+  // Adicionar cookies + impersonate para TikTok, Instagram e Vimeo (e outras que exigirem login)
+  if (
+    cleanUrl.includes('tiktok.com') ||
+    cleanUrl.includes('instagram.com') ||
+    cleanUrl.includes('vimeo.com')
+    // Adicione outros domínios aqui conforme necessário
+  ) {
     const navegadorComCaminho = getCaminhoDoNavegador(browser);
     args.push('--cookies-from-browser', navegadorComCaminho);
     args.push('--impersonate', 'chrome');
@@ -97,9 +106,10 @@ app.post('/download', (req, res) => {
   // --- TRATAMENTO DE ERROS DO YT-DLP (CORRIGIDO) ---
   ytDlp.on('error', (err) => {
     console.error(`Erro ao iniciar yt-dlp: ${err.message}`);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Falha ao iniciar o yt-dlp' });
-    }
+    // Se o spawn falhar (ex: yt-dlp não encontrado), retorne erro
+    // Mas como isso ocorre após o fetch ser iniciado, é mais complexo.
+    // Vamos apenas logar por enquanto, pois o erro real vem no 'close'.
+    // O código abaixo no 'close' já lida com o código de saída != 0.
   });
 
   ytDlp.stdout.on('data', (data) => {
@@ -124,7 +134,20 @@ app.post('/download', (req, res) => {
         console.error('yt-dlp terminou com sucesso, mas nenhum arquivo foi encontrado na pasta downloads.');
         return res.status(500).json({ error: 'Nenhum arquivo foi salvo' });
       }
-      const lastFile = files[files.length - 1];
+
+      // --- NOVO: Ordenar arquivos por data de modificação (do mais recente para o mais antigo) ---
+      const filesWithPath = files.map(file => ({
+        name: file,
+        path: path.join(__dirname, 'downloads', file),
+        mtime: fs.statSync(path.join(__dirname, 'downloads', file)).mtime.getTime()
+      }));
+
+      // Ordena do mais recente para o mais antigo
+      filesWithPath.sort((a, b) => b.mtime - a.mtime);
+
+      const lastFile = filesWithPath[0].name; // Pega o nome do mais recente
+      // --- FIM NOVO ---
+
       res.json({ success: true, file: lastFile });
     } else {
       // O yt-dlp terminou com erro (code != 0)
