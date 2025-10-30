@@ -13,6 +13,45 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Função para tentar adivinhar o caminho do perfil do navegador baseado em Flatpak ou não
+function getCaminhoDoNavegador(browser) {
+  const home = process.env.HOME;
+
+  // Caminhos para navegadores instalados normalmente
+  const caminhosNormais = {
+    chrome: `${home}/.config/google-chrome`,
+    brave: `${home}/.config/BraveSoftware/Brave-Browser`,
+    firefox: `${home}/.mozilla/firefox`, // Firefox tem um sistema de perfis diferente
+    edge: `${home}/.config/microsoft-edge`
+  };
+
+  // Caminhos para navegadores instalados via Flatpak
+  const caminhosFlatpak = {
+    chrome: `${home}/.var/app/com.google.Chrome/config/google-chrome`,
+    brave: `${home}/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser`,
+    firefox: `${home}/.var/app/org.mozilla.firefox/.mozilla/firefox`, // Exemplo
+    edge: `${home}/.var/app/com.microsoft.Edge/config/microsoft-edge`
+  };
+
+  // Tenta encontrar o caminho correto
+  // Primeiro, tenta o Flatpak
+  if (fs.existsSync(caminhosFlatpak[browser])) {
+    console.log(`Usando caminho Flatpak para ${browser}: ${caminhosFlatpak[browser]}`);
+    return `${browser}:${caminhosFlatpak[browser]}`;
+  }
+  // Se não existir, tenta o caminho normal
+  else if (fs.existsSync(caminhosNormais[browser])) {
+    console.log(`Usando caminho normal para ${browser}: ${caminhosNormais[browser]}`);
+    return `${browser}:${caminhosNormais[browser]}`;
+  }
+  else {
+    // Se nenhum dos caminhos existir, retorna apenas o nome do navegador (padrão do yt-dlp)
+    // Isso pode falhar, mas é a última tentativa.
+    console.log(`Nenhum caminho conhecido encontrado para ${browser}, usando padrão.`);
+    return browser; // Ex: 'chrome'
+  }
+}
+
 // Rota para download
 app.post('/download', (req, res) => {
   const { url, browser = 'brave' } = req.body; // Recebe o navegador detectado
@@ -32,7 +71,7 @@ app.post('/download', (req, res) => {
     formatOption = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
   }
 
-  // --- NOVO: Nome de arquivo mais seguro (ID + título limitado) ---
+  // Nome de arquivo mais seguro (ID + título limitado)
   const args = [
     cleanUrl,
     '--format', formatOption,
@@ -43,8 +82,10 @@ app.post('/download', (req, res) => {
 
   // Adicionar cookies + impersonate para TikTok e Instagram
   if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
-    args.push('--cookies-from-browser', browser);
-    args.push('--impersonate', 'chrome'); // Impersonate funciona bem para todos os Chromium-based e Firefox nesse contexto
+    // Usar a função para obter o caminho correto ou nome padrão
+    const navegadorComCaminho = getCaminhoDoNavegador(browser);
+    args.push('--cookies-from-browser', navegadorComCaminho);
+    args.push('--impersonate', 'chrome');
   }
 
   if (!fs.existsSync('downloads')) {
@@ -56,7 +97,6 @@ app.post('/download', (req, res) => {
   // --- TRATAMENTO DE ERROS DO YT-DLP (CORRIGIDO) ---
   ytDlp.on('error', (err) => {
     console.error(`Erro ao iniciar yt-dlp: ${err.message}`);
-    // Se o spawn falhar (ex: yt-dlp não encontrado), retorne erro
     if (!res.headersSent) {
       res.status(500).json({ error: 'Falha ao iniciar o yt-dlp' });
     }
