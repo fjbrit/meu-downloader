@@ -2,138 +2,670 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Meu Downloader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Downloader Pro 🎬</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-      background: #f9f9f9;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 700px;
+      width: 100%;
+      padding: 40px;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
     h1 {
       color: #333;
+      font-size: 32px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
-    input {
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .platforms {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .platform-badge {
+      background: #f0f0f0;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
       width: 100%;
-      padding: 12px;
+      padding: 15px;
       font-size: 16px;
-      margin: 10px 0;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      transition: all 0.3s;
+      outline: none;
     }
+
+    input[type="text"]:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .browser-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .browser-icon {
+      font-size: 24px;
+    }
+
+    .browser-details {
+      flex: 1;
+    }
+
+    .browser-name {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .browser-path {
+      font-size: 12px;
+      color: #666;
+      font-family: 'Courier New', monospace;
+    }
+
     button {
-      padding: 12px 24px;
-      font-size: 16px;
-      background: #2196F3;
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 10px;
       cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
     }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
     button:disabled {
-      background: #aaaaaa;
+      background: #ccc;
       cursor: not-allowed;
+      transform: none;
     }
-    #status {
-      margin-top: 20px;
-      padding: 15px;
-      background: white;
-      border-radius: 4px;
+
+    button .spinner {
+      display: none;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    button.loading .spinner {
+      display: block;
+    }
+
+    button.loading .btn-text {
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-container {
+      margin-top: 25px;
+      display: none;
+    }
+
+    .status-container.show {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .status-box {
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .status-box.info {
+      background: #e3f2fd;
       border-left: 4px solid #2196F3;
+      color: #1565c0;
+    }
+
+    .status-box.success {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      color: #2e7d32;
+    }
+
+    .status-box.error {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+      color: #c62828;
+    }
+
+    .status-box.warning {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+      color: #e65100;
+    }
+
+    .status-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-message {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .logs-container {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+    .log-line {
+      padding: 3px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .log-line:last-child {
+      border-bottom: none;
+    }
+
+    .log-time {
+      color: #858585;
+      margin-right: 8px;
+    }
+
+    .log-info { color: #4fc3f7; }
+    .log-success { color: #66bb6a; }
+    .log-error { color: #ef5350; }
+    .log-warning { color: #ffa726; }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: #4caf50;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-top: 15px;
+      transition: all 0.3s;
+    }
+
+    .download-link:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+    }
+
+    .suggestions {
+      margin-top: 15px;
+    }
+
+    .suggestion-item {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 6px;
+      margin: 8px 0;
+      font-size: 13px;
+      display: flex;
+      align-items: start;
+      gap: 8px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .progress-bar.show {
+      display: block;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      animation: progress 2s ease-in-out infinite;
+    }
+
+    @keyframes progress {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+      color: #666;
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
-  <h1>📥 Meu Downloader de Vídeos</h1>
-  <p>Coloque a URL de um vídeo público (YouTube, TikTok, Instagram, Facebook, etc.):</p>
-  <input type="text" id="videoUrl" placeholder="Insira uma URL Ex: https://www.youtube.com/watch?v=..." />
-  <button id="downloadBtn">Baixar Vídeo</button>
-  <div id="status"></div>
+  <div class="container">
+    <div class="header">
+      <h1>
+        <span>🎬</span>
+        <span>Video Downloader Pro</span>
+      </h1>
+      <p class="subtitle">Baixe vídeos de diversas plataformas com facilidade</p>
+    </div>
+
+    <div class="platforms">
+      <span class="platform-badge">📱 TikTok</span>
+      <span class="platform-badge">📸 Instagram</span>
+      <span class="platform-badge">▶️ YouTube</span>
+      <span class="platform-badge">📘 Facebook</span>
+      <span class="platform-badge">📌 Pinterest</span>
+      <span class="platform-badge">🎥 Vimeo</span>
+    </div>
+
+    <div class="input-group">
+      <label for="videoUrl">🔗 URL do Vídeo</label>
+      <input 
+        type="text" 
+        id="videoUrl" 
+        placeholder="Cole aqui a URL do vídeo (ex: https://www.tiktok.com/@user/video/123...)"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="browser-info" id="browserInfo">
+      <span class="browser-icon" id="browserIcon">🌐</span>
+      <div class="browser-details">
+        <div class="browser-name" id="browserName">Detectando navegador...</div>
+        <div class="browser-path" id="browserPath">Aguarde...</div>
+      </div>
+    </div>
+
+    <button id="downloadBtn">
+      <span class="btn-text">⬇️ Baixar Vídeo</span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill"></div>
+    </div>
+
+    <div class="status-container" id="statusContainer">
+      <div class="status-box" id="statusBox">
+        <div class="status-title" id="statusTitle"></div>
+        <div class="status-message" id="statusMessage"></div>
+      </div>
+      
+      <div class="logs-container" id="logsContainer" style="display: none;">
+        <div id="logs"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Desenvolvido com ❤️ | Suporta múltiplas plataformas</p>
+    </div>
+  </div>
 
   <script>
- // Função para detectar o navegador automaticamente
-function detectBrowser() {
-  const userAgent = navigator.userAgent;
+    // Configuração de ícones por navegador
+    const browserIcons = {
+      brave: '🦁',
+      chrome: '🔴',
+      firefox: '🦊',
+      edge: '🔷',
+      safari: '🧭',
+      chromium: '⚫'
+    };
 
-  // --- DETECÇÃO BASEADA EM API JAVASCRIPT (funciona no Brave) ---
-  // O Brave define uma propriedade específica no objeto navigator ou window.
-  // A forma mais comum é verificar `navigator.brave`.
-  // Se o objeto `navigator.brave` existir, é quase certeza que é o Brave.
-  if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
-    console.log('Navegador detectado como Brave (API navigator.brave.isBrave)');
-    return 'brave';
-  }
+    const browserNames = {
+      brave: 'Brave Browser',
+      chrome: 'Google Chrome',
+      firefox: 'Mozilla Firefox',
+      edge: 'Microsoft Edge',
+      safari: 'Safari',
+      chromium: 'Chromium'
+    };
 
-  // --- DETECÇÃO BASEADA EM USERAGENT (fallback ou outros navegadores) ---
-  // Se a API não funcionar (ou não existir mais), voltamos ao userAgent.
+    // Função aprimorada para detectar navegador
+    function detectBrowser() {
+      const userAgent = navigator.userAgent;
 
-  // Detectar Edge: Tem "Edg/".
-  if (userAgent.includes('Edg/')) {
-    console.log('Navegador detectado como Edge (userAgent)');
-    return 'edge';
-  }
+      // Detectar Brave via API
+      if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
+        return 'brave';
+      }
 
-  // Detectar Chrome: Tem "Chrome/" mas NÃO tem "Edg/" (não é Edge).
-  // Esta condição agora vem após a verificação do Brave e do Edge.
-  if (userAgent.includes('Chrome/')) {
-    console.log('Navegador detectado como Chrome (userAgent, não é Brave nem Edge)');
-    return 'chrome';
-  }
+      // Detectar Edge
+      if (userAgent.includes('Edg/')) {
+        return 'edge';
+      }
 
-  // Detectar Firefox: Tem "Firefox/".
-  if (userAgent.includes('Firefox/')) {
-    console.log('Navegador detectado como Firefox (userAgent)');
-    return 'firefox';
-  }
+      // Detectar Chrome (mas não Edge ou Brave)
+      if (userAgent.includes('Chrome/') && !userAgent.includes('Edg/')) {
+        return 'chrome';
+      }
 
-  // Detectar Safari: Tem "Safari/" mas NÃO tem "Chrome/".
-  if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) {
-    console.log('Navegador detectado como Safari (userAgent)');
-    return 'safari';
-  }
+      // Detectar Firefox
+      if (userAgent.includes('Firefox/')) {
+        return 'firefox';
+      }
 
-  // --- NAVEGADOR NÃO IDENTIFICADO ---
-  console.warn('Navegador não identificado via API ou userAgent, usando Brave como padrão.');
-  return 'brave'; // ou 'chrome', como padrão
-}
+      // Detectar Safari
+      if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) {
+        return 'safari';
+      }
 
-    document.getElementById('downloadBtn').addEventListener('click', async () => {
+      // Padrão
+      return 'brave';
+    }
+
+    // Adicionar log
+    function addLog(message, type = 'info') {
+      const logsContainer = document.getElementById('logs');
+      const logsBox = document.getElementById('logsContainer');
+      logsBox.style.display = 'block';
+
+      const time = new Date().toLocaleTimeString('pt-BR');
+      const logLine = document.createElement('div');
+      logLine.className = `log-line log-${type}`;
+      logLine.innerHTML = `<span class="log-time">[${time}]</span>${message}`;
+      
+      logsContainer.appendChild(logLine);
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+
+    // Atualizar status
+    function updateStatus(title, message, type = 'info', suggestions = []) {
+      const container = document.getElementById('statusContainer');
+      const box = document.getElementById('statusBox');
+      const titleEl = document.getElementById('statusTitle');
+      const messageEl = document.getElementById('statusMessage');
+
+      container.classList.add('show');
+      box.className = `status-box ${type}`;
+
+      const icons = {
+        info: 'ℹ️',
+        success: '✅',
+        error: '❌',
+        warning: '⚠️'
+      };
+
+      titleEl.innerHTML = `${icons[type]} ${title}`;
+      messageEl.innerHTML = message;
+
+      // Adicionar sugestões se houver
+      if (suggestions.length > 0) {
+        const suggestionsHTML = suggestions.map(s => 
+          `<div class="suggestion-item">💡 ${s}</div>`
+        ).join('');
+        messageEl.innerHTML += `<div class="suggestions">${suggestionsHTML}</div>`;
+      }
+
+      addLog(title + ': ' + message.replace(/<[^>]*>/g, ''), type);
+    }
+
+    // Detectar e mostrar informações do navegador
+    async function initBrowser() {
+      const browser = detectBrowser();
+      const icon = browserIcons[browser] || '🌐';
+      const name = browserNames[browser] || 'Navegador Desconhecido';
+
+      document.getElementById('browserIcon').textContent = icon;
+      document.getElementById('browserName').textContent = name;
+      document.getElementById('browserPath').textContent = 'Cookies serão extraídos automaticamente';
+
+      addLog(`Navegador detectado: ${name}`, 'success');
+
+      // Verificar status do servidor
+      try {
+        const response = await fetch('/status');
+        const data = await response.json();
+        addLog(`Servidor online - ${data.files_count} arquivo(s) em cache`, 'info');
+      } catch (err) {
+        addLog('Não foi possível conectar ao servidor', 'warning');
+      }
+
+      return browser;
+    }
+
+    // Detectar plataforma da URL
+    function detectPlatform(url) {
+      const platforms = {
+        'tiktok.com': { name: 'TikTok', icon: '📱' },
+        'instagram.com': { name: 'Instagram', icon: '📸' },
+        'youtube.com': { name: 'YouTube', icon: '▶️' },
+        'youtu.be': { name: 'YouTube', icon: '▶️' },
+        'facebook.com': { name: 'Facebook', icon: '📘' },
+        'fb.watch': { name: 'Facebook', icon: '📘' },
+        'pinterest.com': { name: 'Pinterest', icon: '📌' },
+        'pin.it': { name: 'Pinterest', icon: '📌' },
+        'vimeo.com': { name: 'Vimeo', icon: '🎥' },
+        'twitter.com': { name: 'Twitter/X', icon: '🐦' },
+        'x.com': { name: 'Twitter/X', icon: '🐦' }
+      };
+
+      for (const [domain, info] of Object.entries(platforms)) {
+        if (url.includes(domain)) {
+          return info;
+        }
+      }
+
+      return { name: 'Desconhecida', icon: '🌐' };
+    }
+
+    // Função principal de download
+    async function downloadVideo() {
       const url = document.getElementById('videoUrl').value.trim();
-      const browser = detectBrowser(); // Detecta o navegador
-      console.log('Navegador enviado para o backend:', browser); // Log importante para debug
-
-      const status = document.getElementById('status');
       const btn = document.getElementById('downloadBtn');
+      const progressBar = document.getElementById('progressBar');
+      const browser = await initBrowser();
 
       if (!url) {
-        status.textContent = '⚠️ Por favor, insira uma URL.';
+        updateStatus('Atenção', 'Por favor, insira uma URL válida.', 'warning');
         return;
       }
 
+      const platform = detectPlatform(url);
+      
       btn.disabled = true;
-      status.textContent = '⏳ Enviando solicitação...';
+      btn.classList.add('loading');
+      progressBar.classList.add('show');
+
+      updateStatus(
+        'Iniciando Download',
+        `Plataforma detectada: ${platform.icon} <strong>${platform.name}</strong><br>Preparando download...`,
+        'info'
+      );
+
+      addLog(`Iniciando download de: ${url}`, 'info');
+      addLog(`Plataforma: ${platform.name}`, 'info');
+      addLog(`Navegador: ${browser}`, 'info');
 
       try {
         const response = await fetch('/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, browser }) // Envia o navegador detectado
+          body: JSON.stringify({ url, browser })
         });
 
         const data = await response.json();
 
         if (data.success) {
-          status.innerHTML = `✅ Pronto! <a href="/downloaded/${encodeURIComponent(data.file)}" download> Clique aqui para baixar o vídeo</a>`;
+          const tentativas = data.tentativas > 1 ? ` (após ${data.tentativas} tentativas)` : '';
+          
+          updateStatus(
+            'Download Concluído!',
+            `O vídeo foi baixado com sucesso${tentativas}! 🎉<br>
+            <a href="/downloaded/${encodeURIComponent(data.file)}" download class="download-link">
+              📥 Clique aqui para fazer o download
+            </a>`,
+            'success'
+          );
+
+          addLog(`Download concluído: ${data.file}`, 'success');
         } else {
-          status.textContent = '❌ Erro: ' + (data.error || 'falha desconhecida');
+          const suggestions = data.sugestoes || [];
+          const errorMsg = data.error || 'Erro desconhecido ao processar o download';
+          
+          updateStatus(
+            'Erro no Download',
+            `<strong>${errorMsg}</strong><br><br>Plataforma: ${data.plataforma || platform.name}`,
+            'error',
+            suggestions
+          );
+
+          addLog(`Erro: ${errorMsg}`, 'error');
         }
       } catch (err) {
-        status.textContent = '❌ Erro de rede: ' + err.message;
+        updateStatus(
+          'Erro de Conexão',
+          `Não foi possível conectar ao servidor.<br><strong>${err.message}</strong>`,
+          'error',
+          [
+            'Verifique se o servidor está rodando',
+            'Confirme se a porta 3000 está acessível',
+            'Tente recarregar a página'
+          ]
+        );
+
+        addLog(`Erro de rede: ${err.message}`, 'error');
       } finally {
         btn.disabled = false;
+        btn.classList.remove('loading');
+        progressBar.classList.remove('show');
       }
+    }
+
+    // Event Listeners
+    document.getElementById('downloadBtn').addEventListener('click', downloadVideo);
+    
+    document.getElementById('videoUrl').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        downloadVideo();
+      }
+    });
+
+    // Limpar logs antigos ao colar nova URL
+    document.getElementById('videoUrl').addEventListener('paste', () => {
+      setTimeout(() => {
+        document.getElementById('logs').innerHTML = '';
+        document.getElementById('statusContainer').classList.remove('show');
+      }, 100);
+    });
+
+    // Inicializar
+    window.addEventListener('DOMContentLoaded', () => {
+      initBrowser();
+      addLog('Interface carregada com sucesso', 'success');
     });
   </script>
 </body>
