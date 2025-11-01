@@ -1,5 +1,3 @@
-// Versão 1.0 - Adicionando suporte a múltiplas plataformas
-
 const express = require('express');
 const { spawn } = require('child_process');
 const path = require('path');
@@ -36,7 +34,6 @@ function getCaminhoDoNavegador(browser) {
     }
   };
 
-  // Prioriza Flatpak
   if (fs.existsSync(caminhos.flatpak[browser])) {
     console.log(`✅ Usando caminho Flatpak para ${browser}: ${caminhos.flatpak[browser]}`);
     return `${browser}:${caminhos.flatpak[browser]}`;
@@ -51,19 +48,19 @@ function getCaminhoDoNavegador(browser) {
   return browser;
 }
 
-// Nova função: Detectar plataforma e retornar configurações específicas
+// Detectar plataforma e retornar configurações específicas
 function getPlataformaConfig(url) {
   const urlLower = url.toLowerCase();
   
   const configs = {
-    tiktok: {
+      tiktok: {
       match: ['tiktok.com'],
       needsCookies: true,
       needsImpersonate: true,
       format: 'best[ext=mp4]/best',
       extraArgs: [
         // '--user-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', // Removido
-        '--referer', 'https://www.tiktok.com/', // ✅ Espaço extra removido
+        '--referer', 'https://www.tiktok.com/', // Espaço extra removido ✅
         '--add-header', 'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         '--add-header', 'Accept-Language:pt-BR,pt;q=0.9,en;q=0.7'
       ],
@@ -74,6 +71,7 @@ function getPlataformaConfig(url) {
       needsCookies: true,
       needsImpersonate: true,
       format: 'best[ext=mp4]/best',
+      audioFormat: 'bestaudio[ext=m4a]/bestaudio',
       extraArgs: [
         '--user-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
         '--referer', 'https://www.instagram.com/'
@@ -85,6 +83,7 @@ function getPlataformaConfig(url) {
       needsCookies: false,
       needsImpersonate: false,
       format: 'best[ext=mp4]/best',
+      audioFormat: 'bestaudio',
       extraArgs: [],
       retries: 2
     },
@@ -92,7 +91,8 @@ function getPlataformaConfig(url) {
       match: ['vimeo.com'],
       needsCookies: true,
       needsImpersonate: false,
-      format: 'bv*+ba/b', // Formato mais flexível para Vimeo
+      format: 'bv*+ba/b',
+      audioFormat: 'bestaudio',
       extraArgs: [],
       retries: 2
     },
@@ -101,6 +101,7 @@ function getPlataformaConfig(url) {
       needsCookies: false,
       needsImpersonate: false,
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+      audioFormat: 'bestaudio[ext=m4a]/bestaudio',
       extraArgs: [],
       retries: 2
     },
@@ -109,6 +110,7 @@ function getPlataformaConfig(url) {
       needsCookies: true,
       needsImpersonate: true,
       format: 'best[ext=mp4]/best',
+      audioFormat: 'bestaudio',
       extraArgs: [],
       retries: 2
     },
@@ -117,64 +119,91 @@ function getPlataformaConfig(url) {
       needsCookies: false,
       needsImpersonate: false,
       format: 'best[ext=mp4]/best',
+      audioFormat: 'bestaudio',
       extraArgs: [],
       retries: 2
     }
   };
 
-  // Detecta a plataforma
   for (const [plataforma, config] of Object.entries(configs)) {
     if (config.match.some(domain => urlLower.includes(domain))) {
       return { plataforma, ...config };
     }
   }
 
-  // Configuração padrão
   return {
     plataforma: 'genérica',
     needsCookies: false,
     needsImpersonate: false,
     format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    audioFormat: 'bestaudio[ext=m4a]/bestaudio',
     extraArgs: [],
     retries: 1
   };
 }
 
-// Função para tentar download com múltiplas estratégias
-async function tentarDownload(url, browser, tentativa = 1, maxTentativas = 3) {
+// FUNÇÃO CORRIGIDA: Tentar download com múltiplas estratégias
+async function tentarDownload(url, browser, mediaType = 'video_audio', tentativa = 1, maxTentativas = 3) {
   return new Promise((resolve, reject) => {
     const config = getPlataformaConfig(url);
     
     console.log(`\n${'='.repeat(60)}`);
     console.log(`📥 Tentativa ${tentativa}/${maxTentativas} - Plataforma: ${config.plataforma}`);
     console.log(`🔗 URL: ${url}`);
+    console.log(`🎵 Tipo: ${mediaType}`);
     console.log(`${'='.repeat(60)}`);
+
+    // Configurar formato baseado no tipo de mídia
+    let formatOption = config.format;
+    let mergeOutputFormat = 'mp4';
+    let postProcessArgs = [];
+
+    if (mediaType === 'audio_mp3') {
+      formatOption = config.audioFormat;
+      postProcessArgs = ['--extract-audio', '--audio-format', 'mp3', '--audio-quality', '0'];
+      console.log('🎵 Modo: Extrair apenas áudio (MP3)');
+    } else if (mediaType === 'audio_m4a') {
+      formatOption = config.audioFormat;
+      postProcessArgs = ['--extract-audio', '--audio-format', 'm4a'];
+      console.log('🎵 Modo: Extrair apenas áudio (M4A)');
+    } else if (mediaType === 'video_only') {
+      formatOption = 'bestvideo[ext=mp4]/bestvideo';
+      mergeOutputFormat = 'mp4';
+      console.log('🎬 Modo: Apenas vídeo (sem áudio)');
+    }
 
     // Argumentos base
     const args = [
       url,
-      '--format', config.format,
+      '--format', formatOption,
       '--trim-filenames', '100',
-      '--merge-output-format', 'mp4',
-      '--output', 'downloads/%(id)s_%(title).100B.%(ext)s',
-      '--no-check-certificate',
-      '--verbose' // Mais detalhes nos logs
+      '--output', 'downloads/%(id)s_%(title).50B.%(ext)s',
+      '--no-check-certificate'
     ];
 
-    // Adicionar cookies e impersonate se necessário
+    // Adicionar merge-output-format apenas se não for extração de áudio
+    if (postProcessArgs.length === 0) {
+      args.push('--merge-output-format', mergeOutputFormat);
+    }
+
+    // Adicionar pós-processamento
+    args.push(...postProcessArgs);
+
+    // Adicionar cookies se necessário
     if (config.needsCookies) {
       const navegadorComCaminho = getCaminhoDoNavegador(browser);
       args.push('--cookies-from-browser', navegadorComCaminho);
     }
 
+    // Adicionar impersonate
     if (config.needsImpersonate) {
       args.push('--impersonate', 'chrome');
     }
 
-    // Adicionar argumentos extras da plataforma
+    // Adicionar argumentos extras
     args.push(...config.extraArgs);
 
-    // Estratégias progressivas para TikTok (plataforma mais problemática)
+    // Estratégias progressivas para TikTok
     if (config.plataforma === 'tiktok') {
       if (tentativa === 2) {
         // Segunda tentativa: adicionar extractor args
@@ -187,11 +216,12 @@ async function tentarDownload(url, browser, tentativa = 1, maxTentativas = 3) {
       }
     }
 
+    // Criar pasta downloads se não existir
     if (!fs.existsSync('downloads')) {
       fs.mkdirSync('downloads');
     }
 
-    console.log('🚀 Executando:', 'yt-dlp', args.join(' '));
+    console.log('🚀 Executando yt-dlp...');
 
     const ytDlp = spawn('yt-dlp', args);
     let errorOutput = '';
@@ -200,46 +230,64 @@ async function tentarDownload(url, browser, tentativa = 1, maxTentativas = 3) {
     ytDlp.stdout.on('data', (data) => {
       const output = data.toString();
       stdoutOutput += output;
-      console.log(`yt-dlp: ${output}`);
+      console.log(`yt-dlp: ${output.trim()}`);
     });
 
     ytDlp.stderr.on('data', (data) => {
       const output = data.toString();
       errorOutput += output;
-      console.error(`yt-dlp stderr: ${output}`);
+      // Mostrar apenas erros relevantes (não debug)
+      if (!output.includes('[debug]') && output.trim().length > 0) {
+        console.error(`yt-dlp erro: ${output.trim()}`);
+      }
     });
 
     ytDlp.on('error', (err) => {
       console.error(`❌ Erro ao iniciar yt-dlp: ${err.message}`);
-      reject({ error: 'Erro ao iniciar yt-dlp', details: err.message });
+      reject({ 
+        error: 'Erro ao iniciar yt-dlp', 
+        details: err.message,
+        needsInstall: true
+      });
     });
 
     ytDlp.on('close', (code) => {
       if (code === 0) {
-        console.log('✅ Download concluído com sucesso!');
+        console.log('✅ yt-dlp terminou com sucesso!');
         
-        // Buscar o arquivo mais recente
-        const files = fs.readdirSync('downloads');
-        if (files.length === 0) {
-          console.error('⚠️ Nenhum arquivo encontrado após download');
-          reject({ error: 'Nenhum arquivo foi salvo' });
-          return;
+        // Buscar arquivo mais recente
+        try {
+          const files = fs.readdirSync('downloads');
+          if (files.length === 0) {
+            console.error('⚠️ Nenhum arquivo encontrado');
+            reject({ error: 'Nenhum arquivo foi salvo' });
+            return;
+          }
+
+          // Ordenar por data de modificação (mais recente primeiro)
+          const filesWithStats = files.map(file => {
+            const filepath = path.join(__dirname, 'downloads', file);
+            return {
+              name: file,
+              mtime: fs.statSync(filepath).mtime.getTime()
+            };
+          });
+
+          filesWithStats.sort((a, b) => b.mtime - a.mtime);
+          const lastFile = filesWithStats[0].name;
+          
+          console.log(`📁 Arquivo salvo: ${lastFile}`);
+          resolve({ success: true, file: lastFile, tentativas: tentativa });
+          
+        } catch (err) {
+          console.error('❌ Erro ao ler pasta downloads:', err);
+          reject({ error: 'Erro ao acessar arquivo baixado' });
         }
-
-        const filesWithStats = files.map(file => ({
-          name: file,
-          mtime: fs.statSync(path.join(__dirname, 'downloads', file)).mtime.getTime()
-        }));
-
-        filesWithStats.sort((a, b) => b.mtime - a.mtime);
-        const lastFile = filesWithStats[0].name;
         
-        console.log(`📁 Arquivo salvo: ${lastFile}`);
-        resolve({ success: true, file: lastFile, tentativas: tentativa });
       } else {
         console.error(`❌ yt-dlp terminou com código ${code}`);
         
-        // Analisar erro e decidir se deve tentar novamente
+        // Verificar se deve fazer retry
         const deveRetry = errorOutput.includes('requiring login') || 
                          errorOutput.includes('Sign in to confirm') ||
                          errorOutput.includes('HTTP Error 403') ||
@@ -247,13 +295,16 @@ async function tentarDownload(url, browser, tentativa = 1, maxTentativas = 3) {
 
         if (deveRetry && tentativa < maxTentativas) {
           console.log(`🔄 Tentando novamente... (${tentativa + 1}/${maxTentativas})`);
-          // Aguardar 2 segundos antes de tentar novamente
+          
+          // Aguardar 2 segundos antes de retry
           setTimeout(() => {
-            tentarDownload(url, browser, tentativa + 1, maxTentativas)
+            tentarDownload(url, browser, mediaType, tentativa + 1, maxTentativas)
               .then(resolve)
               .catch(reject);
           }, 2000);
+          
         } else {
+          // Falha definitiva
           reject({ 
             error: 'Falha ao baixar o vídeo', 
             code,
@@ -266,9 +317,9 @@ async function tentarDownload(url, browser, tentativa = 1, maxTentativas = 3) {
   });
 }
 
-// Rota para download com retry automático
+// ROTA CORRIGIDA: Download
 app.post('/download', async (req, res) => {
-  const { url, browser = 'brave' } = req.body;
+  const { url, browser = 'brave', mediaType = 'video_audio' } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: 'URL não fornecida' });
@@ -279,42 +330,46 @@ app.post('/download', async (req, res) => {
 
   console.log(`\n${'🎬'.repeat(30)}`);
   console.log(`🆕 Nova requisição de download`);
-  console.log(`📱 Plataforma detectada: ${config.plataforma}`);
+  console.log(`📱 Plataforma: ${config.plataforma}`);
   console.log(`🌐 Navegador: ${browser}`);
+  console.log(`🎵 Tipo de Mídia: ${mediaType}`);
   console.log(`${'🎬'.repeat(30)}\n`);
 
   try {
-    const resultado = await tentarDownload(cleanUrl, browser, 1, config.retries);
+    const resultado = await tentarDownload(cleanUrl, browser, mediaType, 1, config.retries);
     res.json(resultado);
+    
   } catch (error) {
     console.error('❌ Erro final:', error);
     
-    // Resposta de erro mais informativa
     const errorResponse = {
       error: error.error || 'Erro desconhecido',
       plataforma: config.plataforma,
       sugestoes: []
     };
 
-    // Adicionar sugestões específicas baseadas no erro
-    if (error.details && error.details.includes('requiring login')) {
+    // Sugestões específicas
+    if (error.needsInstall) {
       errorResponse.sugestoes.push(
-        'Faça login no ' + config.plataforma + ' no navegador ' + browser,
-        'Certifique-se de que o navegador está fechado',
-        'Tente limpar cookies e fazer login novamente',
-        'Se estiver usando Brave, tente com Firefox ou Chrome'
+        '⚠️ yt-dlp não está instalado ou não está no PATH',
+        'Instale com: pip install yt-dlp',
+        'Ou: sudo apt install yt-dlp (Ubuntu/Debian)',
+        'Reinicie o servidor após a instalação'
       );
-    }
-
-    if (error.details && error.details.includes('HTTP Error 403')) {
+    } else if (error.details && error.details.includes('requiring login')) {
+      errorResponse.sugestoes.push(
+        `Faça login no ${config.plataforma} no navegador ${browser}`,
+        'Certifique-se de que o navegador está FECHADO',
+        'Navegue por alguns vídeos antes de exportar cookies',
+        'Limpe cookies e faça login novamente'
+      );
+    } else if (error.details && error.details.includes('HTTP Error 403')) {
       errorResponse.sugestoes.push(
         'O conteúdo pode estar restrito geograficamente',
         'Tente usar uma VPN',
         'Verifique se o vídeo é público'
       );
-    }
-
-    if (error.details && error.details.includes('Video unavailable')) {
+    } else if (error.details && error.details.includes('Video unavailable')) {
       errorResponse.sugestoes.push(
         'O vídeo pode ter sido removido',
         'Verifique se o link está correto',
@@ -335,6 +390,9 @@ app.get('/downloaded/:filename', (req, res) => {
     res.download(filepath, (err) => {
       if (err) {
         console.error('Erro ao enviar arquivo:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Erro ao enviar arquivo' });
+        }
       }
     });
   } else {
@@ -342,9 +400,13 @@ app.get('/downloaded/:filename', (req, res) => {
   }
 });
 
-// Nova rota: Limpar arquivos antigos (opcional)
+// Limpar arquivos antigos
 app.post('/cleanup', (req, res) => {
   try {
+    if (!fs.existsSync('downloads')) {
+      return res.json({ success: true, removidos: 0 });
+    }
+
     const files = fs.readdirSync('downloads');
     const now = Date.now();
     const maxAge = 24 * 60 * 60 * 1000; // 24 horas
@@ -361,11 +423,12 @@ app.post('/cleanup', (req, res) => {
     
     res.json({ success: true, removidos });
   } catch (error) {
+    console.error('Erro ao limpar arquivos:', error);
     res.status(500).json({ error: 'Erro ao limpar arquivos' });
   }
 });
 
-// Nova rota: Status do sistema
+// Status do sistema
 app.get('/status', (req, res) => {
   const status = {
     online: true,
@@ -374,11 +437,9 @@ app.get('/status', (req, res) => {
     navegadores_disponiveis: []
   };
 
-  // Verificar navegadores disponíveis
   ['brave', 'chrome', 'chromium', 'firefox', 'edge'].forEach(browser => {
     const caminho = getCaminhoDoNavegador(browser);
-    if (caminho.startsWith(browser + ':')) {
-      // Se começou com 'browser:', encontrou o caminho
+    if (caminho.includes(':')) {
       status.navegadores_disponiveis.push(browser);
     }
   });

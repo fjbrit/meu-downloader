@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Video Downloader Pro 🎬</title>
   <style>
     * {
@@ -89,7 +89,7 @@
       display: block;
       color: #333;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       font-size: 14px;
     }
 
@@ -101,11 +101,64 @@
       border-radius: 10px;
       transition: all 0.3s;
       outline: none;
+      background: white;
     }
 
     input[type="text"]:focus {
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* NOVO: Estilo para botões de tipo de mídia */
+    .media-type-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .media-btn {
+      padding: 15px 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      text-align: center;
+    }
+
+    .media-btn:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+      transform: translateY(-2px);
+    }
+
+    .media-btn.active {
+      border-color: #667eea;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .media-btn .icon {
+      font-size: 24px;
+    }
+
+    .media-btn .title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .media-btn .description {
+      font-size: 11px;
+      opacity: 0.8;
     }
 
     .browser-info {
@@ -138,7 +191,7 @@
       font-family: 'Courier New', monospace;
     }
 
-    button {
+    .download-btn {
       width: 100%;
       padding: 16px;
       font-size: 18px;
@@ -153,22 +206,22 @@
       overflow: hidden;
     }
 
-    button:hover:not(:disabled) {
+    .download-btn:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
     }
 
-    button:active:not(:disabled) {
+    .download-btn:active:not(:disabled) {
       transform: translateY(0);
     }
 
-    button:disabled {
+    .download-btn:disabled {
       background: #ccc;
       cursor: not-allowed;
       transform: none;
     }
 
-    button .spinner {
+    .download-btn .spinner {
       display: none;
       border: 3px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
@@ -179,11 +232,11 @@
       margin: 0 auto;
     }
 
-    button.loading .spinner {
+    .download-btn.loading .spinner {
       display: block;
     }
 
-    button.loading .btn-text {
+    .download-btn.loading .btn-text {
       display: none;
     }
 
@@ -350,6 +403,13 @@
       color: #666;
       font-size: 12px;
     }
+
+    /* Responsivo para telas menores */
+    @media (max-width: 600px) {
+      .media-type-buttons {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -376,9 +436,36 @@
       <input 
         type="text" 
         id="videoUrl" 
-        placeholder="Cole aqui a URL do vídeo (ex: https://www.tiktok.com/@user/video/123...)"
+        placeholder="Cole aqui a URL do vídeo (ex: https://www.youtube.com/watch?v=...)"
         autocomplete="off"
       />
+    </div>
+
+    <!-- NOVO: Botões para tipo de mídia -->
+    <div class="input-group">
+      <label>🎵 Tipo de Mídia</label>
+      <div class="media-type-buttons">
+        <button class="media-btn active" data-type="video_audio">
+          <span class="icon">🎬</span>
+          <span class="title">Vídeo + Áudio</span>
+          <span class="description">Arquivo MP4 completo</span>
+        </button>
+        <button class="media-btn" data-type="audio_mp3">
+          <span class="icon">🎵</span>
+          <span class="title">Áudio MP3</span>
+          <span class="description">Apenas música/som</span>
+        </button>
+        <button class="media-btn" data-type="audio_m4a">
+          <span class="icon">🎧</span>
+          <span class="title">Áudio M4A</span>
+          <span class="description">Qualidade superior</span>
+        </button>
+        <button class="media-btn" data-type="video_only">
+          <span class="icon">📹</span>
+          <span class="title">Apenas Vídeo</span>
+          <span class="description">Sem áudio</span>
+        </button>
+      </div>
     </div>
 
     <div class="browser-info" id="browserInfo">
@@ -389,7 +476,7 @@
       </div>
     </div>
 
-    <button id="downloadBtn">
+    <button class="download-btn" id="downloadBtn">
       <span class="btn-text">⬇️ Baixar Vídeo</span>
       <div class="spinner"></div>
     </button>
@@ -415,6 +502,10 @@
   </div>
 
   <script>
+    // VARIÁVEL GLOBAL para armazenar o navegador detectado
+    let detectedBrowser = 'brave';
+    let selectedMediaType = 'video_audio';
+
     // Configuração de ícones por navegador
     const browserIcons = {
       brave: '🦁',
@@ -434,36 +525,42 @@
       chromium: 'Chromium'
     };
 
-    // Função aprimorada para detectar navegador
+    // Função CORRIGIDA para detectar navegador (SÍNCRONA)
     function detectBrowser() {
       const userAgent = navigator.userAgent;
 
       // Detectar Brave via API
-      if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
+      if (navigator.brave) {
+        console.log('✅ Brave detectado via API');
         return 'brave';
       }
 
       // Detectar Edge
       if (userAgent.includes('Edg/')) {
+        console.log('✅ Edge detectado');
         return 'edge';
       }
 
-      // Detectar Chrome (mas não Edge ou Brave)
-      if (userAgent.includes('Chrome/') && !userAgent.includes('Edg/')) {
+      // Detectar Chrome (depois de verificar Edge e Brave)
+      if (userAgent.includes('Chrome/')) {
+        console.log('✅ Chrome detectado');
         return 'chrome';
       }
 
       // Detectar Firefox
       if (userAgent.includes('Firefox/')) {
+        console.log('✅ Firefox detectado');
         return 'firefox';
       }
 
       // Detectar Safari
       if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) {
+        console.log('✅ Safari detectado');
         return 'safari';
       }
 
       // Padrão
+      console.log('⚠️ Navegador não identificado, usando Brave como padrão');
       return 'brave';
     }
 
@@ -502,7 +599,6 @@
       titleEl.innerHTML = `${icons[type]} ${title}`;
       messageEl.innerHTML = message;
 
-      // Adicionar sugestões se houver
       if (suggestions.length > 0) {
         const suggestionsHTML = suggestions.map(s => 
           `<div class="suggestion-item">💡 ${s}</div>`
@@ -513,28 +609,49 @@
       addLog(title + ': ' + message.replace(/<[^>]*>/g, ''), type);
     }
 
-    // Detectar e mostrar informações do navegador
-    async function initBrowser() {
-      const browser = detectBrowser();
-      const icon = browserIcons[browser] || '🌐';
-      const name = browserNames[browser] || 'Navegador Desconhecido';
+    // Inicializar navegador (CORRIGIDA - SÍNCRONA)
+    function initBrowser() {
+      try {
+        // Detectar navegador IMEDIATAMENTE
+        const browser = detectBrowser();
+        const icon = browserIcons[browser] || '🌐';
+        const name = browserNames[browser] || 'Navegador Desconhecido';
 
-      document.getElementById('browserIcon').textContent = icon;
-      document.getElementById('browserName').textContent = name;
-      document.getElementById('browserPath').textContent = 'Cookies serão extraídos automaticamente';
+        // Salvar na variável global
+        detectedBrowser = browser;
 
-      addLog(`Navegador detectado: ${name}`, 'success');
+        // Atualizar interface IMEDIATAMENTE
+        document.getElementById('browserIcon').textContent = icon;
+        document.getElementById('browserName').textContent = name;
+        document.getElementById('browserPath').textContent = 'Cookies serão extraídos automaticamente';
 
-      // Verificar status do servidor
+        addLog(`Navegador detectado: ${name} (${browser})`, 'success');
+
+        // Verificar status do servidor (ASSÍNCRONO, mas não bloqueia)
+        checkServerStatus();
+
+      } catch (err) {
+        console.error('Erro ao detectar navegador:', err);
+        document.getElementById('browserName').textContent = 'Erro na detecção';
+        document.getElementById('browserPath').textContent = 'Usando Brave como padrão';
+        detectedBrowser = 'brave';
+      }
+    }
+
+    // Verificar status do servidor (SEPARADO)
+    async function checkServerStatus() {
       try {
         const response = await fetch('/status');
         const data = await response.json();
         addLog(`Servidor online - ${data.files_count} arquivo(s) em cache`, 'info');
+        
+        if (data.navegadores_disponiveis && data.navegadores_disponiveis.length > 0) {
+          addLog(`Navegadores no servidor: ${data.navegadores_disponiveis.join(', ')}`, 'info');
+        }
       } catch (err) {
-        addLog('Não foi possível conectar ao servidor', 'warning');
+        addLog('Aviso: Não foi possível conectar ao servidor', 'warning');
+        updateStatus('Aviso', 'Servidor pode estar offline. Inicie com: npm start', 'warning');
       }
-
-      return browser;
     }
 
     // Detectar plataforma da URL
@@ -567,7 +684,6 @@
       const url = document.getElementById('videoUrl').value.trim();
       const btn = document.getElementById('downloadBtn');
       const progressBar = document.getElementById('progressBar');
-      const browser = await initBrowser();
 
       if (!url) {
         updateStatus('Atenção', 'Por favor, insira uma URL válida.', 'warning');
@@ -580,21 +696,35 @@
       btn.classList.add('loading');
       progressBar.classList.add('show');
 
+      const mediaTypeNames = {
+        'video_audio': 'Vídeo e Áudio',
+        'audio_mp3': 'Áudio MP3',
+        'audio_m4a': 'Áudio M4A',
+        'video_only': 'Apenas Vídeo'
+      };
+
       updateStatus(
         'Iniciando Download',
-        `Plataforma detectada: ${platform.icon} <strong>${platform.name}</strong><br>Preparando download...`,
+        `Plataforma: ${platform.icon} <strong>${platform.name}</strong><br>` +
+        `Tipo: <strong>${mediaTypeNames[selectedMediaType]}</strong><br>` +
+        `Preparando download...`,
         'info'
       );
 
       addLog(`Iniciando download de: ${url}`, 'info');
       addLog(`Plataforma: ${platform.name}`, 'info');
-      addLog(`Navegador: ${browser}`, 'info');
+      addLog(`Navegador: ${detectedBrowser}`, 'info');
+      addLog(`Tipo de Mídia: ${mediaTypeNames[selectedMediaType]}`, 'info');
 
       try {
         const response = await fetch('/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, browser })
+          body: JSON.stringify({ 
+            url, 
+            browser: detectedBrowser,
+            mediaType: selectedMediaType
+          })
         });
 
         const data = await response.json();
@@ -604,7 +734,7 @@
           
           updateStatus(
             'Download Concluído!',
-            `O vídeo foi baixado com sucesso${tentativas}! 🎉<br>
+            `O arquivo foi baixado com sucesso${tentativas}! 🎉<br>
             <a href="/downloaded/${encodeURIComponent(data.file)}" download class="download-link">
               📥 Clique aqui para fazer o download
             </a>`,
@@ -631,7 +761,7 @@
           `Não foi possível conectar ao servidor.<br><strong>${err.message}</strong>`,
           'error',
           [
-            'Verifique se o servidor está rodando',
+            'Verifique se o servidor está rodando (npm start)',
             'Confirme se a porta 3000 está acessível',
             'Tente recarregar a página'
           ]
@@ -645,6 +775,26 @@
       }
     }
 
+    // NOVO: Gerenciar seleção de tipo de mídia
+    function setupMediaTypeButtons() {
+      const buttons = document.querySelectorAll('.media-btn');
+      
+      buttons.forEach(button => {
+        button.addEventListener('click', function() {
+          // Remove active de todos
+          buttons.forEach(btn => btn.classList.remove('active'));
+          
+          // Adiciona active no clicado
+          this.classList.add('active');
+          
+          // Salva o tipo selecionado
+          selectedMediaType = this.getAttribute('data-type');
+          
+          addLog(`Tipo de mídia alterado para: ${this.querySelector('.title').textContent}`, 'info');
+        });
+      });
+    }
+
     // Event Listeners
     document.getElementById('downloadBtn').addEventListener('click', downloadVideo);
     
@@ -654,7 +804,7 @@
       }
     });
 
-    // Limpar logs antigos ao colar nova URL
+    // Limpar logs ao colar nova URL
     document.getElementById('videoUrl').addEventListener('paste', () => {
       setTimeout(() => {
         document.getElementById('logs').innerHTML = '';
@@ -662,10 +812,18 @@
       }, 100);
     });
 
-    // Inicializar
+    // Inicializar IMEDIATAMENTE ao carregar a página
     window.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Iniciando aplicação...');
+      
+      // Detectar navegador IMEDIATAMENTE (síncrono)
       initBrowser();
+      
+      // Configurar botões de mídia
+      setupMediaTypeButtons();
+      
       addLog('Interface carregada com sucesso', 'success');
+      console.log('✅ Aplicação iniciada! Navegador detectado:', detectedBrowser);
     });
   </script>
 </body>
